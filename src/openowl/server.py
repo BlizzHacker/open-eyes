@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 import subprocess
 import sys
 import tempfile
 
 from mcp.server.fastmcp import FastMCP
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import PlainTextResponse
 
 from openowl.screenshot_manager import ScreenshotManager
 from openowl.tools import (
@@ -27,7 +30,23 @@ from openowl.tools import (
     workflow,
 )
 
-_VERSION = "0.1.0"
+_VERSION = "0.2.0"
+
+
+class _BearerTokenMiddleware(BaseHTTPMiddleware):
+    """Protect remote HTTP MCP calls with a shared bearer token."""
+
+    def __init__(self, app, token: str) -> None:
+        super().__init__(app)
+        self._expected = f"Bearer {token}"
+
+    async def dispatch(self, request, call_next):
+        if request.url.path == "/mcp" and not hmac.compare_digest(
+            request.headers.get("authorization", ""), self._expected
+        ):
+            return PlainTextResponse("Unauthorized", status_code=401)
+        return await call_next(request)
+
 
 
 def _macos_preflight_permissions() -> None:
@@ -77,7 +96,7 @@ def _macos_preflight_permissions() -> None:
 
 
 def _build_server() -> FastMCP:
-    mcp = FastMCP("owl")
+    mcp = FastMCP("open-eyes")
 
     screenshot_dir = os.path.join(tempfile.gettempdir(), "openowl_screenshots")
     screenshot.screenshot_manager = ScreenshotManager(screenshot_dir)
@@ -93,7 +112,24 @@ def _build_server() -> FastMCP:
 
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in ("--version", "-v", "version"):
-        print(f"openowl v{_VERSION}")
+        print(f"Open Eyes by Move Weight v{_VERSION}")
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "serve-http":
+        import argparse
+
+        parser = argparse.ArgumentParser(description="Serve Open Eyes over protected HTTP MCP.")
+        parser.add_argument("--host", default=os.environ.get("OPEN_EYES_HOST", "127.0.0.1"))
+        parser.add_argument("--port", type=int, default=int(os.environ.get("OPEN_EYES_PORT", "8766")))
+        args = parser.parse_args(sys.argv[2:])
+        token = os.environ.get("OPEN_EYES_TOKEN", "")
+        if len(token) < 32:
+            parser.error("Set OPEN_EYES_TOKEN to a random value at least 32 characters long.")
+        import uvicorn
+
+        app = _build_server().streamable_http_app()
+        app.add_middleware(_BearerTokenMiddleware, token=token)
+        uvicorn.run(app, host=args.host, port=args.port, log_level="warning", access_log=False)
         return
 
     if sys.platform == "darwin":

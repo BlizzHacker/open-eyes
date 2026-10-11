@@ -1,119 +1,41 @@
-# openowl
+# Open Eyes by Move Weight
 
-An MCP server that gives any AI assistant eyes and hands on your desktop —
-screenshots, clicking, typing, OCR, window management, accessibility-tree
-queries, workflow recording. 40+ tools. Apache-2.0. No account, no API key, no
-usage limits, no telemetry.
+Open Eyes gives Hermes and other MCP clients live vision and control of your Windows desktop: screenshots, OCR, accessibility controls, clicking, typing, window management, and repeatable workflows.
 
-> **About this fork.** OpenOwl was created by
-> [Mihir Kanzariya](https://github.com/mihir-kanzariya) and released under
-> Apache-2.0. The original source repository is no longer public, so this fork
-> preserves the open-source code and is maintained here. The original
-> author offers a hosted, managed build at [openowl.dev](https://openowl.dev);
-> binary releases and a Homebrew tap live at
-> [openowl-releases](https://github.com/mihir-kanzariya/openowl-releases).
+The desktop process runs on the Windows PC, where its screen and input devices are. Hermes can launch it persistently over local stdio. Open WebUI on a trusted server can connect over token-protected Streamable HTTP.
 
-## Install
+## Install on Windows
 
-### From source
+Python 3.10 or newer:
 
-```bash
-git clone https://github.com/BlizzHacker/openowl
-cd openowl
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[macos]"      # or [windows]
-openowl --version
+```powershell
+$runtime = "$env:LOCALAPPDATA\MoveWeight\OpenEyes"
+py -3.12 -m venv $runtime
+& "$runtime\Scripts\python.exe" -m pip install --no-cache-dir "open-eyes-by-moveweight[windows] @ git+https://github.com/BlizzHacker/open-eyes.git"
+hermes mcp add open-eyes --command "$runtime\Scripts\open-eyes.exe"
+hermes mcp test open-eyes
 ```
 
-`pip install -e .` adds the `openowl` console script to the venv. Anywhere that
-venv is on `PATH`, the command is callable.
+Restart Hermes or use `/reload-mcp`. See [the Hermes and Open WebUI guide](docs/HERMES-OPENWEBUI.md).
 
-## Configure your MCP client
+## Vision
 
-The server speaks stdio. Point any MCP client at the `openowl` command — the
-path it lives at depends on your install method.
+The Windows extra installs pywinauto, RapidOCR, and NumPy. Screenshot image results let vision-capable models read the screen; OCR and the accessibility tree provide structured text and control details. Keep the desktop signed in and unlocked. Windows UAC secure-desktop prompts remain outside ordinary automation.
 
-### Claude Desktop
+## Open WebUI remote connection
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`
-(macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "owl": {
-      "command": "/absolute/path/to/openowl/.venv/bin/openowl"
-    }
-  }
-}
-```
-
-Replace the path with the output of `which openowl` after activating your venv.
-
-### Claude Code
-
-```bash
-claude mcp add owl --transport stdio -s user -- /absolute/path/to/openowl/.venv/bin/openowl
-```
-
-### Codex / Cline / any MCP client
-
-Run the `openowl` binary over stdio. Same configuration shape — point your
-client at the absolute path.
-
-## Permissions (macOS)
-
-On first run, macOS will prompt to grant **Accessibility** and **Screen
-Recording** permissions. The server checks both at startup and prints which are
-missing. Open System Settings → Privacy & Security → grant access → restart
-your MCP client.
-
-Permissions are remembered per-binary path. Reinstalling into the same venv
-keeps them; an ephemeral install path re-prompts every run, so for daily use
-prefer the venv install above.
-
-## Tools (40)
-
-| Category | Tools |
-|---|---|
-| **Screen capture** | `screenshot`, `screenshot_baseline`, `screenshot_diff`, `manage_screenshots`, `get_screen_size` |
-| **Input** | `click`, `type_text`, `paste_text`, `send_keys`, `scroll`, `drag`, `hover`, `get_mouse_position` |
-| **Click via search** | `click_text`, `click_in_region`, `click_element`, `find_text`, `find_element`, `smart_find` |
-| **Windows** | `list_windows`, `focus_window`, `launch_app`, `set_target_window`, `get_target_window`, `virtual_desktop` |
-| **UI Automation** | `list_elements`, `get_focused_element`, `ui_fingerprint`, `detect_framework` |
-| **Watching** | `wait_for_change`, `start_watcher`, `stop_watcher`, `get_notifications` |
-| **Workflow recording** | `record_workflow`, `replay_workflow_tool`, `list_workflows_tool`, `delete_workflow_tool` |
-| **System** | `clipboard`, `batch_actions`, `configure_uac` |
-
-Run `openowl --version` to print the version.
-
-## Pre-built workflows
-
-**[mihir-kanzariya/openowl-templates](https://github.com/mihir-kanzariya/openowl-templates)**
-is a separate repo of pre-built automation workflows for openowl + Claude Code.
-Clone, configure, run.
-
-## Platforms
-
-- **macOS** — full support (Accessibility + Screen Recording + Vision OCR APIs via PyObjC).
-- **Windows** — full support via pywinauto + Win32 + RapidOCR.
-- **Linux** — not supported.
+Set a random `OPEN_EYES_TOKEN` of at least 32 characters, then run `open-eyes serve-http --host <private-desktop-ip> --port 8766`. Add an MCP Streamable HTTP server in Open WebUI at `http://<private-desktop-ip>:8766/mcp` with bearer authorization. Restrict the Windows firewall rule to the Open WebUI server. Use a private network or encrypted VPN; never port-forward the endpoint to the public internet. See the guide for persistence details.
 
 ## Development
 
-```bash
-git clone https://github.com/BlizzHacker/openowl
-cd openowl
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,macos]"   # or [dev,windows]
-pytest                          # 20 tests
+```powershell
+py -3.12 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[dev,windows]"
+pytest
 ruff check .
 ```
 
-See `CONTRIBUTING.md` for the full workflow.
+## Attribution and license
 
-## License
-
-Apache License 2.0 — see `LICENSE` and `NOTICE`, which credits the original
-author. OpenOwl is copyright 2026 Mihir Kanzariya; this fork preserves that
-attribution as the license requires.
+Open Eyes is a Move Weight rebrand and continuation of [OpenOwl](https://github.com/mihir-kanzariya/openowl), created by Mihir Kanzariya under Apache-2.0. Original copyright and notices remain in [LICENSE](LICENSE) and [NOTICE](NOTICE). This repository preserves that attribution.
