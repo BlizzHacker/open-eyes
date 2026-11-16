@@ -101,7 +101,7 @@ def register(server) -> int:
             action: One of "list", "cleanup", "set_limit".
             keep: New rolling cap (only used when action is "set_limit", default 50).
         """
-        from server import screenshot_mgr
+        from openowl.tools.screenshot import screenshot_manager as screenshot_mgr
 
         action = validate_screenshot_action(action)
 

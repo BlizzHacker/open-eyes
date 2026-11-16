@@ -1,6 +1,6 @@
 # Open Eyes by Move Weight
 
-Open Eyes gives Hermes and other MCP clients live vision and control of your Windows desktop: screenshots, OCR, accessibility controls, clicking, typing, window management, and repeatable workflows.
+Open Eyes gives Hermes, Open WebUI and other MCP clients live vision and control of your Windows desktop: screenshots, OCR, accessibility controls, clicking, typing, window management and repeatable workflows. Since 0.3 it can also run your homelab: shell and file tools, SSH, Proxmox VMs and LXC containers, the *arr stack (including ROMarr), qBittorrent, Plex, and any HTTP service. A vision bridge lets text-only models see the screen.
 
 The desktop process runs on the Windows PC, where its screen and input devices are. Hermes can launch it persistently over local stdio. Open WebUI on a trusted server can connect over token-protected Streamable HTTP.
 
@@ -22,9 +22,20 @@ Restart Hermes or use `/reload-mcp`. See [the Hermes and Open WebUI guide](docs/
 
 The Windows extra installs pywinauto, RapidOCR, and NumPy. Screenshot image results let vision-capable models read the screen; OCR and the accessibility tree provide structured text and control details. Keep the desktop signed in and unlocked. Windows UAC secure-desktop prompts remain outside ordinary automation.
 
+## Homelab and system tools
+
+Open Eyes 0.3 adds 21 ops tools: `run_command`, file read/write/edit/search, `http_request`, `ssh_run`, `proxmox`, `guest_exec`, `arr`, `qbittorrent`, `plex`, `service_api`, `services_status`, `homelab_overview` and `look`. They are guarded by a `read` / `operate` / `admin` permission mode (default `read`).
+
+```powershell
+open-eyes init-config   # writes a commented config.toml
+open-eyes doctor        # checks SSH, Proxmox and every configured service
+```
+
+API keys can be read at runtime from inside the Proxmox container that owns them (`api_key_guest`), so they are never copied to the desktop. Set `OPEN_EYES_PROFILES=ops` to run headless on a server. See [the ops guide](docs/OPS.md).
+
 ## Open WebUI remote connection
 
-Set a random `OPEN_EYES_TOKEN` of at least 32 characters, then run `open-eyes serve-http --host <private-desktop-ip> --port 8766`. Add an MCP Streamable HTTP server in Open WebUI at `http://<private-desktop-ip>:8766/mcp` with bearer authorization. Restrict the Windows firewall rule to the Open WebUI server. Use a private network or encrypted VPN; never port-forward the endpoint to the public internet. See the guide for persistence details.
+Set a random `OPEN_EYES_TOKEN` of at least 32 characters, then run `open-eyes serve-http --host <private-desktop-ip> --port 8766`. Add an MCP Streamable HTTP server in Open WebUI at `http://<private-desktop-ip>:8766/mcp` with bearer authorization. Restrict the Windows firewall rule to the Open WebUI server. Remote clients use `[policy] remote_mode`, which defaults to `read`. Use a private network or encrypted VPN; never port-forward the endpoint to the public internet. See the guide for persistence details.
 
 ## Development
 
