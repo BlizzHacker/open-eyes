@@ -1,0 +1,98 @@
+# Open Eyes ops configuration.
+#
+# Location: $OPEN_EYES_CONFIG, else %LOCALAPPDATA%\MoveWeight\OpenEyes\config.toml
+# on Windows, else ~/.config/open-eyes/config.toml. Check it with `open-eyes doctor`.
+#
+# Secrets: any secret field `x` can be written as
+#   x      = "literal"            (avoid; the file is then sensitive)
+#   x_env  = "ENV_VAR_NAME"       (read from the environment)
+#   x_file = "~/.secrets/x.txt"   (first line of a file)
+#   x_cmd  = "some command"       (stdout of a local command)
+#   x_ssh   = { host = "pve1", command = "cat /root/key" }          (over SSH)
+#   x_guest = { guest = 105, command = "cat /var/lib/app/key" }     (inside a Proxmox guest)
+# Command forms run once and are cached in memory; the key never touches this disk.
+
+[policy]
+# read    = look only (GET calls, file reads, read-only commands)
+# operate = change things (commands, writes, guest power, *arr commands)
+# admin   = also destructive actions (rm -rf, pct destroy, DELETE calls, rollbacks)
+mode = "read"
+# Mode for `open-eyes serve-http` (remote clients such as Open WebUI).
+remote_mode = "read"
+# Restrict file tools to these folders. Empty = anywhere the user can access.
+allow_paths = []
+# JSON-lines record of every operate/admin action.
+audit_log = "~/.open-eyes/audit.jsonl"
+max_output_chars = 20000
+command_timeout = 120
+
+# ---------------------------------------------------------------- SSH hosts
+# Uses your normal ssh client and keys (BatchMode: no password prompts).
+[ssh.pve1]
+target = "root@192.168.1.10"
+
+[ssh.pve2]
+target = "root@192.168.1.11"
+jump = "pve1"            # optional: hop through another alias or user@host
+
+# ---------------------------------------------------------------- Proxmox
+[proxmox]
+# Easiest: run pvesh over SSH on any cluster node (no API token needed).
+ssh_host = "pve1"
+# Or use the REST API with a token instead:
+# url = "https://192.168.1.10:8006"
+# token_id = "root@pam!open-eyes"
+# token_secret_env = "PVE_TOKEN_SECRET"
+# verify_tls = false
+
+# Map node names to SSH aliases for guest_exec. Unmapped nodes are reached at
+# their cluster IP, hopping through ssh_host.
+[proxmox.nodes]
+pve1 = "pve1"
+pve2 = "pve2"
+
+# ---------------------------------------------------------------- Services
+# kind: arr | qbittorrent | plex | http
+# auth (http): none | bearer | basic | x-api-key | header:<Name> | query:<param>
+
+[services.radarr]
+kind = "arr"                       # app inferred from the name; set app = "radarr" otherwise
+url = "http://192.168.1.20:7878"
+api_key_env = "RADARR_API_KEY"
+# Or read it straight out of the Radarr container through Proxmox:
+# api_key_guest = { guest = "radarr", command = '''sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /var/lib/radarr/config.xml''' }
+
+[services.sonarr]
+kind = "arr"
+url = "http://192.168.1.21:8989"
+api_key_env = "SONARR_API_KEY"
+
+[services.romarr]
+kind = "arr"                       # ROMarr speaks the *arr API at /api/v1
+url = "http://192.168.1.30:7878"
+api_key_env = "ROMARR_API_KEY"
+
+[services.qbittorrent]
+kind = "qbittorrent"
+url = "http://192.168.1.40:8080"
+username = "admin"
+password_env = "QBIT_PASSWORD"
+
+[services.plex]
+kind = "plex"
+url = "http://192.168.1.50:32400"
+token_env = "PLEX_TOKEN"
+
+[services.website]
+kind = "http"
+url = "https://example.com"
+health = "/"
+description = "Public site"
+
+# ---------------------------------------------------------------- Vision
+# Lets text-only models "see" through the `look` tool.
+[vision]
+api = "openai"                     # openai | ollama | anthropic
+base_url = "http://192.168.1.60:11434/v1"
+model = "qwen2.5vl:7b"
+# api_key_env = "VISION_API_KEY"

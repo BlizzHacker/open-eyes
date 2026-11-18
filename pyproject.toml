@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "open-eyes-by-moveweight"
-version = "0.2.0"
-description = "Open Eyes by Move Weight: vision and desktop control for Hermes, Open WebUI, and other MCP clients."
+version = "0.3.0"
+description = "Open Eyes by Move Weight: vision, desktop control and homelab operations (shell, SSH, Proxmox, *arr, services) for Hermes, Open WebUI and other MCP clients."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-keywords = ["mcp", "hermes", "open-webui", "ai", "automation", "desktop", "ocr", "computer-use"]
+keywords = ["mcp", "hermes", "open-webui", "ai", "automation", "desktop", "ocr", "computer-use", "proxmox", "homelab", "sonarr", "radarr", "ssh"]
 authors = [{ name = "Mihir Kanzariya", email = "kanzariyamihir@gmail.com" }]
 maintainers = [{ name = "Move Weight" }]
 classifiers = [
@@ -18,6 +18,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "Operating System :: MacOS",
   "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -35,6 +36,7 @@ dependencies = [
   "rapidfuzz>=3.0.0",
   "certifi>=2024.0.0",
   "uvicorn>=0.30.0",
+  "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -71,6 +73,9 @@ Issues = "https://github.com/BlizzHacker/open-eyes/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"openowl.ops" = ["*.toml"]
 
 [tool.ruff]
 line-length = 100
